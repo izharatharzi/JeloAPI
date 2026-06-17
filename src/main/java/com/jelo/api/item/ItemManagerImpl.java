@@ -1,32 +1,27 @@
 package com.jelo.api.item;
 
 import com.jelo.api.JeloAPI;
-import com.jelo.api.exception.ItemException;
-import org.bukkit.Bukkit;
+import com.jelo.api.util.MiniMessageUtil;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 public class ItemManagerImpl implements ItemManager {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ItemManagerImpl.class);
+    private final JeloAPI jeloAPI;
 
     private final Map<String, CustomItem> customItems = new HashMap<>();
     private final Map<CustomItem, ItemStack> customItemItemStackMap = new HashMap<>();
 
     private final NamespacedKey namespacedKey;
 
-    public ItemManagerImpl() {
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("JeloAPI");
-        if (plugin == null) throw new NullPointerException("Plugin JeloAPI is not found. This is might be issues coming from the API itself.");
-
+    public ItemManagerImpl(JeloAPI jeloAPI, @NotNull Plugin plugin) {
+        this.jeloAPI = jeloAPI;
         this.namespacedKey = new NamespacedKey(
                 plugin,
                 "CUSTOM_ITEM_NAME"
@@ -76,7 +71,7 @@ public class ItemManagerImpl implements ItemManager {
     @Override
     public void registerItem(@NotNull CustomItem customItem) {
         if (getByName(customItem.itemName()).isPresent()) {
-            LOGGER.debug("Custom item: {} is already registered. (Skip)", customItem.itemName());
+            jeloAPI.getLogger().debug("Custom item: {} is already registered. (Skip)", customItem.itemName());
             return;
         }
 
@@ -90,20 +85,29 @@ public class ItemManagerImpl implements ItemManager {
         customItems.put(itemName, customItem);
         customItemItemStackMap.put(customItem, itemStack);
 
-        LOGGER.info("Custom item: {} is successfully registered", itemName);
+        jeloAPI.getLogger().info("Custom item: {} is successfully registered", itemName);
     }
 
     @Override
     public void unregisterItem(@NotNull CustomItem customItem) {
         if (getByName(customItem.itemName()).isEmpty()) {
-            LOGGER.debug("Custom item: {} is not found (UNREGISTER ACTION). (Skipped)", customItem.itemName());
+            jeloAPI.getLogger().debug("Custom item: {} is not found (UNREGISTER ACTION). (Skipped)", customItem.itemName());
             return;
         }
         String itemName = customItem.itemName();
         customItems.remove(itemName, customItem);
         customItemItemStackMap.remove(customItem);
 
-        LOGGER.info("Custom item: {} is successfully unregistered", itemName);
+        jeloAPI.getLogger().info("Custom item: {} is successfully unregistered", itemName);
+    }
+
+    @Override
+    public void unregisterItems() {
+        jeloAPI.getLogger().info("Unregistering all custom items...");
+
+        for (CustomItem customItem : customItems.values()) {
+            unregisterItem(customItem);
+        }
     }
 
     @Override
@@ -111,8 +115,8 @@ public class ItemManagerImpl implements ItemManager {
         String itemName = customItem.itemName();
         ItemStack itemStack = customItemItemStackMap.get(customItem).clone();
         player.getInventory().addItem(itemStack);
-        player.sendMessage(JeloAPI.miniMessage.deserialize("<green>You received <white><bold>" + itemName));
+        player.sendMessage(MiniMessageUtil.miniMessage.deserialize("<green>You received <white><bold>" + itemName));
 
-        LOGGER.info("Player: {} received {}", player.getUniqueId(), itemName);
+        jeloAPI.getLogger().info("Player: {} received {}", player.getUniqueId(), itemName);
     }
 }

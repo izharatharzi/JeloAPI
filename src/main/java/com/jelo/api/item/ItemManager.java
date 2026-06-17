@@ -48,6 +48,8 @@ public interface ItemManager {
      */
     void unregisterItem(@NotNull CustomItem customItem);
 
+    void unregisterItems();
+
     /**
      * Give specific custom item to specific player.
      *

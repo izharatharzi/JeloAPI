@@ -6,7 +6,7 @@
 
     <groupId>com.jelo.api</groupId>
     <artifactId>jeloapi</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3</version>
     <packaging>jar</packaging>
 
     <name>JeloAPI</name>
@@ -26,6 +26,7 @@
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
+                    <parameters>true</parameters>
                 </configuration>
             </plugin>
             <plugin>

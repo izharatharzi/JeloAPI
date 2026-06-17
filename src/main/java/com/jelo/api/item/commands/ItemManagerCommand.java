@@ -9,13 +9,15 @@ import org.bukkit.entity.Player;
 
 public class ItemManagerCommand extends JeloCommand {
 
-    public ItemManagerCommand() {
+    private final JeloAPI jeloAPI;
+
+    public ItemManagerCommand(JeloAPI jeloAPI) {
         super("itemmanager");
+        this.jeloAPI = jeloAPI;
+
         setPermission("jeloapi.command.itemmanager");
 
-        setDefaultExecutor((sender, ctx) -> {
-            sender.sendMessage("§cWrong syntax. Use /itemmanager give-item");
-        });
+        setDefaultExecutor((sender, ctx) -> sender.sendMessage("§cWrong syntax. Use /itemmanager give-item"));
     }
 
     @SubCommand(
@@ -24,8 +26,7 @@ public class ItemManagerCommand extends JeloCommand {
     )
     public void onGiveItemCommand(CommandSender sender, Player target, CustomItem item, int amount) {
         for (int i = 0; i < amount; i++) {
-            JeloAPI.getItemManager().giveItem(target, item);
+            jeloAPI.getItemManager().giveItem(target, item);
         }
-        sender.sendMessage("§aSuccessfully distributed custom items to " + target.getName());
     }
 }

@@ -14,6 +14,12 @@ import java.util.Optional;
 
 public class AbilityListener implements Listener {
 
+    private final JeloAPI jeloAPI;
+
+    public AbilityListener(JeloAPI jeloAPI) {
+        this.jeloAPI = jeloAPI;
+    }
+
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
@@ -22,7 +28,7 @@ public class AbilityListener implements Listener {
         ItemStack itemStack = event.getItem();
         if (itemStack == null) return;
 
-        Optional<CustomItem> optional = JeloAPI.getItemManager().getByItemStack(itemStack);
+        Optional<CustomItem> optional = jeloAPI.getItemManager().getByItemStack(itemStack);
         if (optional.isEmpty()) return;
 
         CustomItem customItem = optional.get();

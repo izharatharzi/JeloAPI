@@ -8,15 +8,21 @@ import java.util.List;
 import java.util.Optional;
 
 public class CustomItemArgument extends Argument<CustomItem> {
-    public CustomItemArgument(String id) { super(id); }
+
+    private final JeloAPI jeloAPI;
+
+    public CustomItemArgument(JeloAPI jeloAPI, String id) {
+        super(id);
+        this.jeloAPI = jeloAPI;
+    }
 
     @Override
     public Optional<CustomItem> parse(CommandSender sender, String input) {
-        return JeloAPI.getItemManager().getByName(input);
+        return jeloAPI.getItemManager().getByName(input);
     }
 
     @Override
     public List<String> suggest(CommandSender sender, String currentInput) {
-        return JeloAPI.getItemManager().getCustomItems().stream().map(CustomItem::itemName).toList();
+        return jeloAPI.getItemManager().getCustomItems().stream().map(CustomItem::itemName).toList();
     }
 }

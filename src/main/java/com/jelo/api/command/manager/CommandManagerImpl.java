@@ -1,13 +1,11 @@
 package com.jelo.api.command.manager;
 
+import com.jelo.api.JeloAPI;
 import com.jelo.api.command.CommandSyntax;
 import com.jelo.api.command.JeloCommand;
 import com.jelo.api.command.MinecraftCommand;
 import com.jelo.api.command.SubCommand;
-import com.jelo.api.command.argument.Argument;
-import com.jelo.api.command.argument.CustomItemArgument;
-import com.jelo.api.command.argument.IntegerArgument;
-import com.jelo.api.command.argument.PlayerArgument;
+import com.jelo.api.command.argument.*;
 import com.jelo.api.command.condition.CommandCondition;
 import com.jelo.api.item.CustomItem;
 import org.bukkit.Bukkit;
@@ -15,32 +13,33 @@ import org.bukkit.command.CommandMap;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
 
 public class CommandManagerImpl implements CommandManager {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CommandManagerImpl.class);
+    private final JeloAPI jeloAPI;
 
     private final CommandMap commandMap;
     private final Map<Class<? extends CommandCondition>, CommandCondition> commandConditions;
     private final Map<JeloCommand, MinecraftCommand> commands;
-    private final Map<Class<?>, java.util.function.Function<String, Argument<?>>> argumentRegistry = new HashMap<>();
+    private final Map<Class<?>, Function<String, Argument<?>>> argumentRegistry = new HashMap<>();
 
-    public CommandManagerImpl() {
+    public CommandManagerImpl(JeloAPI jeloAPI) {
+        this.jeloAPI = jeloAPI;
+
         this.commandMap = Bukkit.getCommandMap();
         this.commandConditions = new HashMap<>();
         this.commands = new HashMap<>();
 
         argumentRegistry.put(Player.class, PlayerArgument::new);
-        argumentRegistry.put(CustomItem.class, CustomItemArgument::new);
+        argumentRegistry.put(
+                CustomItem.class,
+                id -> new CustomItemArgument(jeloAPI, id)
+        );
         argumentRegistry.put(int.class, IntegerArgument::new);
         argumentRegistry.put(Integer.class, IntegerArgument::new);
     }
@@ -48,7 +47,7 @@ public class CommandManagerImpl implements CommandManager {
     @Override
     public void registerCommand(@NotNull Plugin plugin, @NotNull JeloCommand command) {
         if (commands.containsKey(command)) {
-            LOGGER.info("Command: {} is already registered. (Skipped)", command.getName());
+            jeloAPI.getLogger().info("Command: {} is already registered. (Skipped)", command.getName());
             return;
         }
 
@@ -66,13 +65,25 @@ public class CommandManagerImpl implements CommandManager {
                 Parameter param = parameters[i];
                 Class<?> paramType = param.getType();
 
-                var argumentFactory = argumentRegistry.get(paramType);
-                if (argumentFactory == null) {
-                    throw new RuntimeException("Unsupported parameter type [" + paramType.getSimpleName() + "] in method: " + method.getName());
+                Argument<?> argumentToken;
+
+                if (paramType.isEnum()) {
+                    argumentToken = createEnumArgument(param.getName(), paramType);
+                } else {
+                    var argumentFactory = argumentRegistry.get(paramType);
+
+                    if (argumentFactory == null) {
+                        throw new RuntimeException(
+                                "Unsupported parameter type [" +
+                                        paramType.getSimpleName() +
+                                        "] in method: " +
+                                        method.getName()
+                        );
+                    }
+
+                    argumentToken = argumentFactory.apply(param.getName());
                 }
 
-                // Generates token node using actual method variable name as parameter tracker identifier
-                Argument<?> argumentToken = argumentFactory.apply(param.getName());
                 collectedArgs.add(argumentToken);
             }
 
@@ -115,28 +126,27 @@ public class CommandManagerImpl implements CommandManager {
         commandMap.register(plugin.getName(), minecraftCommand);
         commands.put(command, minecraftCommand);
 
-        LOGGER.info("Command: {} is successfully registered", command.getName());
+        jeloAPI.getLogger().info("Command: {} is successfully registered", command.getName());
     }
     @Override
     public void unregisterCommand(@NotNull JeloCommand command) {
         if (!commands.containsKey(command)) {
-            LOGGER.debug("Command: {} is not found (UNREGISTER ACTION). (Skipped)", command.getName());
+            jeloAPI.getLogger().debug("Command: {} is not found (UNREGISTER ACTION). (Skipped)", command.getName());
         }
 
         MinecraftCommand minecraftCommand = commands.get(command);
         minecraftCommand.unregister(commandMap);
         commands.remove(command, minecraftCommand);
 
-        LOGGER.info("Command: {} is successfully unregistered", command.getName());
+        jeloAPI.getLogger().info("Command: {} is successfully unregistered", command.getName());
     }
 
     @Override
     public void unregisterCommands() {
-        LOGGER.info("Unregistering all commands...");
-        LOGGER.info("INFO: This action is only unregistering all commands that is using JeloAPI Command Framework!");
+        jeloAPI.getLogger().info("Unregistering all commands...");
 
-        for (JeloCommand jeloCommand : commands.keySet()) {
-            unregisterCommand(jeloCommand);
+        for (JeloCommand command : commands.keySet()) {
+            unregisterCommand(command);
         }
     }
 
@@ -165,5 +175,16 @@ public class CommandManagerImpl implements CommandManager {
                     childCommand.getName()
             );
         }
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private Argument<?> createEnumArgument(
+            String id,
+            Class<?> enumClass
+    ) {
+        return new EnumArgument(
+                id,
+                (Class<? extends Enum>) enumClass
+        );
     }
 }

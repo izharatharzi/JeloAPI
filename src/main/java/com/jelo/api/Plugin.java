@@ -8,29 +8,41 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public final class Plugin extends JavaPlugin {
 
+    private JeloAPI jeloAPI;
+
     @Override
     public void onEnable() {
-        // Plugin startup logic
-        getLogger().info("Initializing JeloAPI...");
+        this.jeloAPI = new JeloAPIImpl(this);
 
-        JeloAPI.getItemManager().registerItem(new SimpleItem());
+        APIProvider.set(jeloAPI);
 
-        getServer().getPluginManager().registerEvents(new AbilityListener(), this);
-
-        MainCommand mainCommand = new MainCommand(this);
-        ItemManagerCommand itemManagerCommand = new ItemManagerCommand();
-
-        JeloAPI.getCommandManager().registerCommand(this, itemManagerCommand);
-
-        JeloAPI.getCommandManager().registerSubCommand(mainCommand, itemManagerCommand);
-        JeloAPI.getCommandManager().registerCommand(this, mainCommand);
-
-        getLogger().info("JeloAPI is successfully initialized");
+        registerListeners();
+        setupItems();
+        setupCommands();
     }
 
     @Override
     public void onDisable() {
         // Plugin shutdown logic
-        JeloAPI.getCommandManager().unregisterCommands();
+        jeloAPI.getItemManager().unregisterItems();
+        jeloAPI.getCommandManager().unregisterCommands();
+    }
+
+    private void registerListeners() {
+        getServer().getPluginManager().registerEvents(new AbilityListener(jeloAPI), this);
+    }
+
+    private void setupItems() {
+        jeloAPI.getItemManager().registerItem(new SimpleItem());
+    }
+
+    private void setupCommands() {
+        MainCommand mainCommand = new MainCommand(this);
+        ItemManagerCommand itemManagerCommand = new ItemManagerCommand(jeloAPI);
+
+        jeloAPI.getCommandManager().registerCommand(this, itemManagerCommand);
+
+        jeloAPI.getCommandManager().registerSubCommand(mainCommand, itemManagerCommand);
+        jeloAPI.getCommandManager().registerCommand(this, mainCommand);
     }
 }
