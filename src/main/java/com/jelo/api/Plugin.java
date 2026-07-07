@@ -39,7 +39,7 @@ public final class Plugin extends JavaPlugin {
     }
 
     private void setupCommands() {
-        MainCommand mainCommand = new MainCommand(this);
+        MainCommand mainCommand = new MainCommand();
         ItemManagerCommand itemManagerCommand = new ItemManagerCommand(jeloAPI);
 
         jeloAPI.getCommandManager().registerCommand(this, itemManagerCommand);
