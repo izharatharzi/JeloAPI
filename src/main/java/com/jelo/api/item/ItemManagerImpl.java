@@ -55,6 +55,7 @@ public class ItemManagerImpl implements ItemManager {
     @Override
     public Optional<CustomItem> getByItemStack(@NotNull ItemStack itemStack) {
         return customItems.values().stream().filter(customItem ->
+                itemStack.getItemMeta() != null &&
                 itemStack.getItemMeta()
                         .getPersistentDataContainer()
                         .has(namespacedKey) &&

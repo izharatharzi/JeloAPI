@@ -145,7 +145,7 @@ public class CommandManagerImpl implements CommandManager {
     public void unregisterCommands() {
         jeloAPI.getLogger().info("Unregistering all commands...");
 
-        for (JeloCommand command : commands.keySet()) {
+        for (JeloCommand command : new ArrayList<>(commands.keySet())) {
             unregisterCommand(command);
         }
     }
