@@ -30,6 +30,8 @@ public class Menu {
 
     private final List<MenuContent> contents;
 
+    private final int refreshInterval;
+
     public static Builder builder(@NotNull Component title, int rows) {
         return new Builder(title, rows);
     }
@@ -43,7 +45,7 @@ public class Menu {
      */
     private Menu(Component title, int rows, boolean useOpenSound, Sound openSound,
                  List<MenuContent> contents, boolean border, Material borderMaterial,
-                 boolean takeable) {
+                 boolean takeable, int refreshInterval) {
         this.title = title;
 
         if (rows > 6) {
@@ -60,6 +62,8 @@ public class Menu {
         this.borderMaterial = borderMaterial;
 
         this.contents = contents;
+
+        this.refreshInterval = refreshInterval;
     }
 
     /**
@@ -156,6 +160,19 @@ public class Menu {
     }
 
     /**
+     * Gets the refresh interval for the menu.
+     *
+     * @return Refresh interval
+     */
+    public int getRefreshInterval() {
+        return refreshInterval;
+    }
+
+    public boolean isAutoRefresh() {
+        return refreshInterval > 0;
+    }
+
+    /**
      * Represent object as builder of Menu.
      */
     public static final class Builder {
@@ -172,6 +189,8 @@ public class Menu {
         private Material borderMaterial = Material.AIR;
 
         private final List<MenuContent> contents;
+
+        private int refreshInterval = -1;
 
         public Builder(@NotNull Component title, int rows) {
             this.title = title;
@@ -215,7 +234,20 @@ public class Menu {
         }
 
         public Builder addContent(MenuContent content) {
+            if (content.getPosition().x() <= 0 | content.getPosition().y() <= 0) {
+                throw new IllegalStateException("Content position cannot be less than 1");
+            }
+
             this.contents.add(content);
+            return this;
+        }
+
+        public Builder refreshInterval(int refreshInterval) {
+            if (refreshInterval <= 0) {
+                this.refreshInterval = -1;
+            }
+
+            this.refreshInterval = refreshInterval;
             return this;
         }
 
@@ -228,7 +260,8 @@ public class Menu {
                     contents,
                     useBorder,
                     borderMaterial,
-                    takeable
+                    takeable,
+                    refreshInterval
             );
         }
     }
