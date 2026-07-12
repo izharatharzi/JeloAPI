@@ -1,5 +1,7 @@
 package com.jelo.api.menu;
 
+import com.jelo.api.menu.container.ContainerType;
+import com.jelo.api.menu.container.MenuContainer;
 import com.jelo.api.menu.content.MenuContent;
 import com.jelo.api.util.MiniMessageUtil;
 import net.kyori.adventure.text.Component;
@@ -8,7 +10,6 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -28,7 +29,11 @@ public class Menu {
     private final boolean useBorder;
     private final Material borderMaterial;
 
-    private final List<MenuContent> contents;
+    private final MenuContainer content;
+    private final MenuContainer header;
+    private final MenuContainer footer;
+    private final MenuContainer leftBar;
+    private final MenuContainer rightBar;
 
     private final int refreshInterval;
 
@@ -43,9 +48,9 @@ public class Menu {
     /**
      * Private constructor.
      */
-    private Menu(Component title, int rows, boolean useOpenSound, Sound openSound,
-                 List<MenuContent> contents, boolean border, Material borderMaterial,
-                 boolean takeable, int refreshInterval) {
+    private Menu(Component title, int rows, boolean useOpenSound, Sound openSound, boolean border,
+                 Material borderMaterial, boolean takeable, int refreshInterval, MenuContainer content,
+                 MenuContainer header, MenuContainer footer, MenuContainer leftBar, MenuContainer rightBar) {
         this.title = title;
 
         if (rows > 6) {
@@ -61,7 +66,11 @@ public class Menu {
         this.useBorder = border;
         this.borderMaterial = borderMaterial;
 
-        this.contents = contents;
+        this.content = content;
+        this.header = header;
+        this.footer = footer;
+        this.leftBar = leftBar;
+        this.rightBar = rightBar;
 
         this.refreshInterval = refreshInterval;
     }
@@ -150,13 +159,24 @@ public class Menu {
         return borderMaterial;
     }
 
-    /**
-     * Gets list of menu contents.
-     *
-     * @return List of menu contents
-     */
-    public List<MenuContent> getContents() {
-        return contents;
+    public MenuContainer getContent() {
+        return content;
+    }
+
+    public MenuContainer getHeader() {
+        return header;
+    }
+
+    public MenuContainer getFooter() {
+        return footer;
+    }
+
+    public MenuContainer getLeftBar() {
+        return leftBar;
+    }
+
+    public MenuContainer getRightBar() {
+        return rightBar;
     }
 
     /**
@@ -188,7 +208,11 @@ public class Menu {
         private boolean useBorder;
         private Material borderMaterial = Material.AIR;
 
-        private final List<MenuContent> contents;
+        private final MenuContainer content = new MenuContainer(ContainerType.CONTENT);
+        private final MenuContainer header = new MenuContainer(ContainerType.HEADER);
+        private final MenuContainer footer = new MenuContainer(ContainerType.FOOTER);
+        private final MenuContainer leftBar = new MenuContainer(ContainerType.LEFT_BAR);
+        private final MenuContainer rightBar = new MenuContainer(ContainerType.RIGHT_BAR);
 
         private int refreshInterval = -1;
 
@@ -199,8 +223,6 @@ public class Menu {
                 throw new IllegalStateException("Menu Rows can't be less than 1 and more than 6");
             }
             this.rows = rows;
-
-            this.contents = new ArrayList<>();
         }
 
         public Builder(@NotNull String title, int rows) {
@@ -233,18 +255,30 @@ public class Menu {
             return this;
         }
 
-        public Builder addContent(MenuContent content) {
-            if (content.getPosition().x() <= 0 | content.getPosition().y() <= 0) {
-                throw new IllegalStateException("Content position cannot be less than 1");
-            }
+        public ContainerBuilder content() {
+            return new ContainerBuilder(this, content);
+        }
 
-            this.contents.add(content);
-            return this;
+        public ContainerBuilder header() {
+            return new ContainerBuilder(this, header);
+        }
+
+        public ContainerBuilder footer() {
+            return new ContainerBuilder(this, footer);
+        }
+
+        public ContainerBuilder leftBar() {
+            return new ContainerBuilder(this, leftBar);
+        }
+
+        public ContainerBuilder rightBar() {
+            return new ContainerBuilder(this, rightBar);
         }
 
         public Builder refreshInterval(int refreshInterval) {
             if (refreshInterval <= 0) {
                 this.refreshInterval = -1;
+                return this;
             }
 
             this.refreshInterval = refreshInterval;
@@ -257,12 +291,51 @@ public class Menu {
                     rows,
                     useSoundWhenOpen,
                     openSound,
-                    contents,
                     useBorder,
                     borderMaterial,
                     takeable,
-                    refreshInterval
+                    refreshInterval,
+                    content,
+                    header,
+                    footer,
+                    leftBar,
+                    rightBar
             );
+        }
+    }
+
+    public static final class ContainerBuilder {
+
+        private final Builder builder;
+        private final MenuContainer container;
+
+        public ContainerBuilder(Builder builder, MenuContainer container) {
+            this.builder = builder;
+            this.container = container;
+        }
+
+        public ContainerBuilder addContent(MenuContent content) {
+            container.addContent(content);
+            return this;
+        }
+
+        public ContainerBuilder addContent(MenuContent... contents) {
+            this.container.addContent(List.of(contents));
+            return this;
+        }
+
+        public ContainerBuilder addContent(List<MenuContent> contents) {
+            this.container.addContent(contents);
+            return this;
+        }
+
+        public ContainerBuilder removeContent(MenuContent menuContent) {
+            this.container.removeContent(menuContent);
+            return this;
+        }
+
+        public Builder build() {
+            return builder;
         }
     }
 }

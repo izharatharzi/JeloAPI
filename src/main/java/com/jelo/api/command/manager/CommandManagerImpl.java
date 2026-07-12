@@ -9,6 +9,7 @@ import com.jelo.api.command.argument.*;
 import com.jelo.api.command.condition.CommandCondition;
 import com.jelo.api.item.CustomItem;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.command.CommandMap;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -42,6 +43,8 @@ public class CommandManagerImpl implements CommandManager {
         );
         argumentRegistry.put(int.class, IntegerArgument::new);
         argumentRegistry.put(Integer.class, IntegerArgument::new);
+        argumentRegistry.put(World.class, WorldArgument::new);
+        argumentRegistry.put(String.class, TargetArgument::new);
     }
 
     @Override
@@ -157,12 +160,15 @@ public class CommandManagerImpl implements CommandManager {
         for (CommandSyntax childSyntax : childCommand.getSyntaxes()) {
 
             // Build a nested path name: "itemmanager give-item"
-            String compositeLiteral = childCommand.getName() + " " + childSyntax.getLiteral();
+            StringBuilder compositeLiteral = new StringBuilder(childCommand.getName());
+            if (childSyntax.getLiteral() != null) {
+                compositeLiteral.append(" ").append(childSyntax.getLiteral());
+            }
 
             // Register it directly onto the parent route tree blueprint!
             parentCommand.addSyntax(
                     childSyntax.getHandler(),
-                    compositeLiteral,
+                    compositeLiteral.toString(),
                     childSyntax.getArguments().toArray(new Argument<?>[0])
             ).setCondition(childSyntax.getCondition());
         }

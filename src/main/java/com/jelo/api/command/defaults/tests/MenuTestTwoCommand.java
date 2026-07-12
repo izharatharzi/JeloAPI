@@ -17,12 +17,16 @@ public class MenuTestTwoCommand extends JeloCommand {
         Menu menu = Menu.builder("<yellow>test-2", 5)
                 .useSoundWhenOpen(true)
                 .border(Material.GRAY_STAINED_GLASS_PANE)
-                .addContent(
-                        MenuContent
-                                .dynamic(session -> ItemBuilder.builder(Material.PLAYER_HEAD)
+
+                .content()
+                .addContent(MenuContent
+                        .dynamic(session ->
+                                ItemBuilder
+                                        .builder(Material.PLAYER_HEAD)
                                         .name("<green>Online players: <white>" + Bukkit.getOnlinePlayers().size()).build(), 4, 2)
-                                .takeable(false)
-                )
+                        .takeable(false))
+                .build()
+
                 .refreshInterval(20)
                 .takeable(false)
                 .build();

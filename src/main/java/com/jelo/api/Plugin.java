@@ -1,9 +1,7 @@
 package com.jelo.api;
 
 import com.jelo.api.command.defaults.MainCommand;
-import com.jelo.api.command.defaults.tests.MenuTestOneCommand;
-import com.jelo.api.command.defaults.tests.MenuTestThreeCommand;
-import com.jelo.api.command.defaults.tests.MenuTestTwoCommand;
+import com.jelo.api.command.defaults.tests.*;
 import com.jelo.api.item.ability.AbilityListener;
 import com.jelo.api.item.action.ActionListener;
 import com.jelo.api.item.commands.ItemManagerCommand;
@@ -60,10 +58,12 @@ public final class Plugin extends JavaPlugin {
         jeloAPI.getCommandManager().registerCommand(this, mainCommand);
 
         // Registering test commands
-        if (getConfig().getBoolean("test-commands")) {
+        if (getConfig().getBoolean("commands.test-commands")) {
             jeloAPI.getCommandManager().registerCommand(this, new MenuTestOneCommand());
             jeloAPI.getCommandManager().registerCommand(this, new MenuTestTwoCommand());
             jeloAPI.getCommandManager().registerCommand(this, new MenuTestThreeCommand());
+            jeloAPI.getCommandManager().registerCommand(this, new MenuTestFourCommand());
+            jeloAPI.getCommandManager().registerCommand(this, new MenuTestFiveCommand());
         }
     }
 

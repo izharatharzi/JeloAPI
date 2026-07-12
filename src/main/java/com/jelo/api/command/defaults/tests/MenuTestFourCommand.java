@@ -8,20 +8,29 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-public class MenuTestThreeCommand extends JeloCommand {
+public class MenuTestFourCommand extends JeloCommand {
 
-    public MenuTestThreeCommand() {
-        super("menutest-3");
+    public MenuTestFourCommand() {
+        super("menutest-4");
 
-        Menu menu = Menu.builder("<yellow>test-3", 6)
-                .useSoundWhenOpen(true)
-                .border(Material.GRAY_STAINED_GLASS_PANE)
-
-                .content()
-                .addContent(MenuContent.of(new ItemStack(Material.STICK), 1, 1).takeable(true))
-                .build()
+        Menu menu = Menu.builder("Jelo", 6)
 
                 .takeable(false)
+                .refreshInterval(20)
+                .useSoundWhenOpen(true)
+
+                .content()
+                .addContent(MenuContent.of(new ItemStack(Material.STICK), 1, 1))
+                .build()
+
+                .header()
+                .addContent(MenuContent.of(new ItemStack(Material.PLAYER_HEAD), 4, 1))
+                .build()
+
+                .footer()
+                .addContent(MenuContent.of(new ItemStack(Material.BARRIER), 4, 1))
+                .build()
+
                 .build();
 
         setDefaultExecutor(((commandSender, context) -> {

@@ -50,6 +50,7 @@ public final class MenuContent {
         return this;
     }
 
+    @Deprecated
     public ItemStack getItemStack() {
         return itemStack;
     }

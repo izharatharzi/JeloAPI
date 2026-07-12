@@ -1,5 +1,6 @@
 # JeloAPI configuration v1
 
-# Enable/disable all test commands which its purpose is to do some testing.
-# For production server, we recommend you to disable test commands because it is unnecessary.
-test-commands: true
+commands:
+  # Enable/disable all test commands which its purpose is to do some testing.
+  # For production server, we recommend you to disable test commands because it is unnecessary.
+  test-commands: true

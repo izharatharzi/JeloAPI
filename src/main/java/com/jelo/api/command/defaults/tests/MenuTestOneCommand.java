@@ -20,7 +20,6 @@ public class MenuTestOneCommand extends JeloCommand {
         setDefaultExecutor(((commandSender, context) -> {
             if (commandSender instanceof Player player) {
                 MenuSession session = menu.open(player);
-                session.addContent(MenuContent.of(new ItemStack(Material.DIAMOND), 1, 1));
                 session.refresh();
             } else {
                 commandSender.sendMessage("no");

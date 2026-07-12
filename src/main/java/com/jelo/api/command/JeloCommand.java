@@ -31,6 +31,10 @@ public class JeloCommand {
         return syntax; // Returning this lets us chain configurations!
     }
 
+    public CommandSyntax addSyntax(CommandHandler handler, Argument<?>... arguments) {
+        return addSyntax(handler, null, arguments);
+    }
+
     public JeloCommand(String name) {
         this(name, new String[0]);
     }

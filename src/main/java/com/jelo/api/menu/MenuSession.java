@@ -1,6 +1,7 @@
 package com.jelo.api.menu;
 
 import com.jelo.api.Plugin;
+import com.jelo.api.menu.container.MenuContainer;
 import com.jelo.api.menu.content.MenuContent;
 import com.jelo.api.menu.content.Position;
 import org.bukkit.Bukkit;
@@ -21,7 +22,6 @@ public final class MenuSession {
     private final MenuHolder holder;
     private final ItemStack borderItem;
 
-    private final List<MenuContent> contents = new ArrayList<>();
     private final Map<Integer, MenuContent> renderedContents = new HashMap<>();
 
     private Inventory inventory;
@@ -32,7 +32,6 @@ public final class MenuSession {
         this.player = player;
         this.holder = new MenuHolder(this);
 
-        this.contents.addAll(menu.getContents());
         this.borderItem = new ItemStack(menu.getBorderMaterial());
     }
 
@@ -81,7 +80,12 @@ public final class MenuSession {
         renderedContents.clear();
 
         renderBorder();
-        renderContents();
+
+        renderContainer(menu.getContent());
+        renderContainer(menu.getHeader());
+        renderContainer(menu.getFooter());
+        renderContainer(menu.getLeftBar());
+        renderContainer(menu.getRightBar());
     }
 
     /**
@@ -94,24 +98,6 @@ public final class MenuSession {
         }
 
         render();
-    }
-
-    /**
-     * Add content to session.
-     *
-     * @param content The content
-     */
-    public void addContent(MenuContent content) {
-        contents.add(content);
-    }
-
-    /**
-     * Remove content from session.
-     *
-     * @param content The content
-     */
-    public void removeContent(MenuContent content) {
-        contents.remove(content);
     }
 
     private void renderBorder() {
@@ -138,9 +124,19 @@ public final class MenuSession {
         }
     }
 
-    private void renderContents() {
-        for (MenuContent content : contents) {
-            int slot = contentSlot(content.getPosition());
+    private void renderContainer(MenuContainer container) {
+        for (MenuContent content : container.getContents()) {
+            int slot;
+            switch (container.getContainerType()) {
+                case CONTENT -> slot = contentSlot(content.getPosition());
+                case HEADER -> slot = headerSlot(content.getPosition());
+                case FOOTER -> slot = footerSlot(content.getPosition());
+                case LEFT_BAR -> slot = leftBarSlot(content.getPosition());
+                case RIGHT_BAR -> slot = rightBarSlot(content.getPosition());
+                default -> slot = -1;
+            }
+
+            if (slot == -1) continue;
 
             inventory.setItem(slot, content.provide(this));
             renderedContents.put(slot, content);
@@ -158,6 +154,58 @@ public final class MenuSession {
         if (!menu.isUseBorder()) {
             x--;
             y--;
+        }
+
+        return inventorySlot(x, y);
+    }
+
+    private int headerSlot(Position position) {
+        int x = position.x();
+        int y = 0;
+
+        return inventorySlot(x, y);
+    }
+
+    private int footerSlot(Position position) {
+        int x = position.x();
+        int y = menu.getRows() - 1;
+
+        return inventorySlot(x, y);
+    }
+
+    private int leftBarSlot(Position position) {
+        int x = 0;
+        int y = position.y();
+
+        if (!menu.isUseBorder()) {
+            throw new IllegalStateException("Can't add content for left bar because menu is not using border");
+        }
+
+        if (y == 0 && menu.getHeader().isContentAvailable(Position.of(0, 0))) {
+            throw new IllegalStateException("Can't add content to position x: 0 and y: 0 when there is already header content");
+        }
+
+        if (y == menu.getRows() && menu.getFooter().isContentAvailable(Position.of(0, menu.getRows()))) {
+            throw new IllegalStateException("Can't add content to position x: 0 and y: " + menu.getRows() +" when there is already footer content");
+        }
+
+        return inventorySlot(x, y);
+    }
+
+    private int rightBarSlot(Position position) {
+        int x = 8;
+        int y = position.y();
+
+        if (!menu.isUseBorder()) {
+            throw new IllegalStateException("Can't add content for right bar because menu is not using border");
+        }
+
+        if (y == 0 && menu.getHeader().isContentAvailable(Position.of(0, 0))) {
+            throw new IllegalStateException("Can't add content to position x: 0 and y: 0 when there is already header content");
+        }
+
+        if (y == menu.getRows() && menu.getFooter().isContentAvailable(Position.of(0, menu.getRows()))) {
+            throw new IllegalStateException("Can't add content to position x: 0 and y: " + menu.getRows() +" when there is already footer content");
         }
 
         return inventorySlot(x, y);

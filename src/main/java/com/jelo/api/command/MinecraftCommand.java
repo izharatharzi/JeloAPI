@@ -4,6 +4,7 @@ import com.jelo.api.command.argument.Argument;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,17 +26,16 @@ public class MinecraftCommand extends Command {
     }
 
     @Override
-    public boolean execute(@NotNull CommandSender sender, @NotNull String commandLabel, @NotNull String @NotNull [] args) {
-        // 1. Root master permission guard check
-        if (command.getPermission() != null &&
-                !command.getPermission().isBlank() &&
-                !sender.hasPermission(command.getPermission())
-        ) {
+    public boolean execute(@NotNull CommandSender sender,
+                           @NotNull String commandLabel,
+                           @NotNull String @NonNull [] args) {
+        if (command.getPermission() != null
+                && !command.getPermission().isBlank()
+                && !sender.hasPermission(command.getPermission())) {
             sender.sendMessage(CommandMessagePreset.NO_PERMISSION);
             return true;
         }
 
-        // 2. Base Command Check (E.g., just running /japi or /itemmanager with no arguments)
         if (args.length == 0) {
             if (command.getDefaultExecutor() != null) {
                 command.getDefaultExecutor().run(sender, new CommandContext());
@@ -45,79 +45,78 @@ public class MinecraftCommand extends Command {
             return true;
         }
 
-        CommandSyntax bestMatchSyntax = null;
-        int highestLiteralWordsMatched = -1;
+        CommandSyntax bestSyntax = null;
+        CommandContext bestContext = null;
+        int bestLiteralLength = -1;
 
-        // 3. Find the most accurate syntax route matching the multi-word prefix path structure
         for (CommandSyntax syntax : command.getSyntaxes()) {
-            String[] syntaxWords = syntax.getLiteral().split(" ");
 
-            // If the player provided fewer total words than this syntax pattern needs, skip early
-            if (args.length < syntaxWords.length) {
+            if (syntax.getCondition() != null && !syntax.getCondition().check(sender)) {
                 continue;
             }
 
-            boolean isMatch = true;
-            for (int i = 0; i < syntaxWords.length; i++) {
-                if (!args[i].equalsIgnoreCase(syntaxWords[i])) {
-                    isMatch = false;
+            String[] literals = syntax.getLiteral().split(" ");
+
+            if (args.length < literals.length) {
+                continue;
+            }
+
+            boolean literalMatch = true;
+            for (int i = 0; i < literals.length; i++) {
+                if (!args[i].equalsIgnoreCase(literals[i])) {
+                    literalMatch = false;
                     break;
                 }
             }
 
-            // Keep track of the deepest multi-token match path found
-            if (isMatch && syntaxWords.length > highestLiteralWordsMatched) {
-                bestMatchSyntax = syntax;
-                highestLiteralWordsMatched = syntaxWords.length;
+            if (!literalMatch) {
+                continue;
+            }
+
+            List<Argument<?>> parameters = syntax.getArguments();
+
+            if (args.length - literals.length != parameters.size()) {
+                continue;
+            }
+
+            CommandContext context = new CommandContext();
+            boolean parseSuccess = true;
+
+            for (int i = 0; i < parameters.size(); i++) {
+
+                Argument<?> argument = parameters.get(i);
+
+                Optional<?> parsed = argument.parse(sender, args[literals.length + i]);
+
+                if (parsed.isEmpty()) {
+                    parseSuccess = false;
+                    break;
+                }
+
+                context.set(argument.getId(), parsed.get());
+            }
+
+            if (!parseSuccess) {
+                continue;
+            }
+
+            if (literals.length > bestLiteralLength) {
+                bestLiteralLength = literals.length;
+                bestSyntax = syntax;
+                bestContext = context;
             }
         }
 
-        // 4. No exact multi-word path matched. Fallback to base command default executor or notice
-        if (bestMatchSyntax == null) {
+        if (bestSyntax == null) {
             if (command.getDefaultExecutor() != null) {
                 command.getDefaultExecutor().run(sender, new CommandContext());
             } else {
-                sender.sendMessage("§cUnknown subcommand route. Type /" + commandLabel + " for assistance.");
+                sender.sendMessage("§cUnknown command.");
             }
             return true;
         }
 
-        // 5. Evaluate the route gate condition filter
-        if (bestMatchSyntax.getCondition() != null && !bestMatchSyntax.getCondition().check(sender)) {
-            sender.sendMessage("§cYou do not meet the criteria to use this subcommand.");
-            return true;
-        }
-
-        List<Argument<?>> expectedParameters = bestMatchSyntax.getArguments();
-
-        // Dynamic Variable Splice extraction!
-        // Variables always start precisely after the multi-word literal structure keywords clear out.
-        int absoluteVarParametersPassed = args.length - highestLiteralWordsMatched;
-
-        if (absoluteVarParametersPassed != expectedParameters.size()) {
-            sendSyntaxUsage(sender, commandLabel, bestMatchSyntax);
-            return true;
-        }
-
-        // 6. Loop and execute type-safe field parsing steps
-        CommandContext context = new CommandContext();
-        for (int i = 0; i < expectedParameters.size(); i++) {
-            Argument<?> parameterParser = expectedParameters.get(i);
-
-            // Shift lookup index dynamically past the verified literal matching length threshold boundaries
-            String rawStringValue = args[highestLiteralWordsMatched + i];
-
-            Optional<?> parseOutput = parameterParser.parse(sender, rawStringValue);
-            if (parseOutput.isEmpty()) {
-                sender.sendMessage("§cInvalid parameter input value '" + rawStringValue + "' for target arg position <" + parameterParser.getId() + ">.");
-                return true;
-            }
-
-            context.set(parameterParser.getId(), parseOutput.get());
-        }
-
-        // 7. Fire execution callback method mapping pipeline routes cleanly!
-        bestMatchSyntax.getHandler().run(sender, context);
+        bestSyntax.getHandler().run(sender, bestContext);
         return true;
     }
 
@@ -163,6 +162,26 @@ public class MinecraftCommand extends Command {
             if (completePathMatches) {
                 int expectedArgLookupIndex = typingWordIndex - syntaxWords.length;
                 List<Argument<?>> targetSignatureArgs = syntax.getArguments();
+
+                if (expectedArgLookupIndex > targetSignatureArgs.size()) {
+                    continue;
+                }
+
+                boolean valid = true;
+                for (int i = 0; i < expectedArgLookupIndex; i++) {
+                    Argument<?> arg = targetSignatureArgs.get(i);
+
+                    String input = args[syntaxWords.length + i];
+
+                    if (arg.parse(sender, input).isEmpty()) {
+                        valid = false;
+                        break;
+                    }
+                }
+
+                if (!valid) {
+                    continue;
+                }
 
                 if (expectedArgLookupIndex < targetSignatureArgs.size()) {
                     Argument<?> currentParserNode = targetSignatureArgs.get(expectedArgLookupIndex);
