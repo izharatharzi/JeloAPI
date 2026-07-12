@@ -177,10 +177,6 @@ public final class MenuSession {
         int x = 0;
         int y = position.y();
 
-        if (!menu.isUseBorder()) {
-            throw new IllegalStateException("Can't add content for left bar because menu is not using border");
-        }
-
         if (y == 0 && menu.getHeader().isContentAvailable(Position.of(0, 0))) {
             throw new IllegalStateException("Can't add content to position x: 0 and y: 0 when there is already header content");
         }
@@ -195,10 +191,6 @@ public final class MenuSession {
     private int rightBarSlot(Position position) {
         int x = 8;
         int y = position.y();
-
-        if (!menu.isUseBorder()) {
-            throw new IllegalStateException("Can't add content for right bar because menu is not using border");
-        }
 
         if (y == 0 && menu.getHeader().isContentAvailable(Position.of(0, 0))) {
             throw new IllegalStateException("Can't add content to position x: 0 and y: 0 when there is already header content");
